@@ -30,7 +30,6 @@ import android.accounts.Account
 import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager
 import android.app.Activity
-import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -38,15 +37,24 @@ import android.view.View.GONE
 import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.view.WindowManager.LayoutParams.FLAG_SECURE
+import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Observer
+import com.okta.oidc.AuthenticationPayload
+import com.okta.oidc.AuthorizationStatus
+import com.okta.oidc.OIDCConfig
+import com.okta.oidc.Okta
+import com.okta.oidc.ResultCallback
+import com.okta.oidc.clients.sessions.SessionClient
+import com.okta.oidc.clients.web.WebAuthClient
+import com.okta.oidc.storage.SharedPreferenceStorage
+import com.owncloud.android.BuildConfig
 import com.owncloud.android.MainApp
 import com.owncloud.android.MainApp.Companion.accountType
 import com.owncloud.android.R
 import com.owncloud.android.authentication.oauth.AuthStateManager
-import com.owncloud.android.authentication.oauth.OAuthConnectionBuilder
 import com.owncloud.android.authentication.oauth.OAuthUtils
 import com.owncloud.android.data.authentication.KEY_USER_ID
 import com.owncloud.android.data.authentication.OAUTH2_OIDC_SCOPE
@@ -67,7 +75,6 @@ import com.owncloud.android.ui.dialog.SslUntrustedCertDialog
 import com.owncloud.android.utils.DocumentProviderUtils.Companion.notifyDocumentProviderRoots
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.android.synthetic.main.account_setup.*
-import net.openid.appauth.AppAuthConfiguration
 import net.openid.appauth.AuthState
 import net.openid.appauth.AuthorizationException
 import net.openid.appauth.AuthorizationRequest
@@ -414,30 +421,71 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
     private fun performGetAuthorizationCodeRequest(authorizationServiceConfiguration: AuthorizationServiceConfiguration) {
         Timber.d("A browser should be opened now to authenticate this user.")
         val clientId = getString(R.string.oauth2_client_id)
-        val redirectUri = Uri.parse(getString(R.string.oauth2_redirect_uri))
+        val redirectUri = Uri.parse(getString(R.string.oauth2_redirect_uri)).toString()
         val scope = if (oidcSupported) OAUTH2_OIDC_SCOPE else ""
-        val builder = AuthorizationRequest.Builder(
-            authorizationServiceConfiguration,
-            clientId,
-            ResponseTypeValues.CODE,
-            redirectUri
-        ).setScope(scope)
 
-        val request = builder.build()
-        val completedIntent = Intent(this, LoginActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, completedIntent, 0)
+        val config = OIDCConfig.Builder()
+            .clientId(clientId)
+            .redirectUri(redirectUri)
+            .endSessionRedirectUri(redirectUri)
+            .discoveryUri(OAuthUtils.getDiscoveryUri(context = this, serverBaseUrl = serverBaseUrl))
+            .scopes("openid", "offline_access", "email", "profile")
+            .create()
 
-        val appAuthConfigurationBuilder = AppAuthConfiguration.Builder()
-        appAuthConfigurationBuilder.setConnectionBuilder(
-            OAuthConnectionBuilder(
-                this
-            )
-        )
+        val webClient: WebAuthClient = Okta.WebAuthBuilder()
+            .withConfig(config)
+            .withContext(applicationContext)
+            .withStorage(SharedPreferenceStorage(this))
+            .create()
 
-        authService = AuthorizationService(this, appAuthConfigurationBuilder.build())
-        Timber.d("Sends an authorization request to the authorization service using a custom tab or browser instance.")
-        Timber.d("Authorization service: $authService")
-        authService?.performAuthorizationRequest(request, pendingIntent)
+        val sessionClient: SessionClient = webClient.sessionClient
+        webClient.registerCallback(object :
+            ResultCallback<AuthorizationStatus?, com.okta.oidc.util.AuthorizationException?> {
+            override fun onSuccess(@NonNull status: AuthorizationStatus) {
+                if (status == AuthorizationStatus.AUTHORIZED) {
+                    //client is authorized.
+                    val tokens = sessionClient.tokens
+                    Timber.d("Tokens Received: ${tokens.accessToken} ${tokens.idToken}")
+                } else if (status == AuthorizationStatus.SIGNED_OUT) {
+                    //this only clears the browser session.
+                }
+            }
+            override fun onCancel() {
+                //authorization canceled
+            }
+
+            override fun onError(@NonNull msg: String?, error: com.okta.oidc.util.AuthorizationException?) {
+                //error encounted
+            }
+        }, this)
+        webClient.signIn(this, null)
+//        AppAuth
+//        Timber.d("A browser should be opened now to authenticate this user.")
+//        val clientId = getString(R.string.oauth2_client_id)
+//        val redirectUri = Uri.parse(getString(R.string.oauth2_redirect_uri))
+//        val scope = if (oidcSupported) OAUTH2_OIDC_SCOPE else ""
+//        val builder = AuthorizationRequest.Builder(
+//            authorizationServiceConfiguration,
+//            clientId,
+//            ResponseTypeValues.CODE,
+//            redirectUri
+//        ).setScope(scope)
+//
+//        val request = builder.build()
+//        val completedIntent = Intent(this, LoginActivity::class.java)
+//        val pendingIntent = PendingIntent.getActivity(this, 0, completedIntent, 0)
+//
+//        val appAuthConfigurationBuilder = AppAuthConfiguration.Builder()
+//        appAuthConfigurationBuilder.setConnectionBuilder(
+//            OAuthConnectionBuilder(
+//                this
+//            )
+//        )
+//
+//        authService = AuthorizationService(this, appAuthConfigurationBuilder.build())
+//        Timber.d("Sends an authorization request to the authorization service using a custom tab or browser instance.")
+//        Timber.d("Authorization service: $authService")
+//        authService?.performAuthorizationRequest(request, pendingIntent)
     }
 
     override fun onNewIntent(intent: Intent?) {

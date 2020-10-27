@@ -62,6 +62,31 @@ class OAuthUtils {
             )
         }
 
+        fun getDiscoveryUri(
+            context: Context,
+            serverBaseUrl: String
+        ): String {
+            Timber.d("OIDC, getting the auth and token endpoints from the discovery document (well-known)")
+
+            val urlPathAfterProtocolIndex = serverBaseUrl.indexOf(
+                File.separator, serverBaseUrl.indexOf(File.separator) + 2
+            )
+
+            // OIDC Service Discovery Location is placed in urls like https://whatever and not https://whatever/others,
+            // so remove those subpaths
+            val urlToGetServiceDiscoveryLocation = if (urlPathAfterProtocolIndex != -1) {
+                serverBaseUrl.substring(0, urlPathAfterProtocolIndex)
+            } else {
+                serverBaseUrl
+            }
+
+            return Uri.parse(urlToGetServiceDiscoveryLocation).buildUpon()
+                .appendPath(AuthorizationServiceConfiguration.WELL_KNOWN_PATH)
+                .appendPath(AuthorizationServiceConfiguration.OPENID_CONFIGURATION_RESOURCE)
+                .build()
+                .toString()
+        }
+
         fun buildOAuthorizationServiceConfig(
             context: Context,
             serverBaseUrl: String = "",

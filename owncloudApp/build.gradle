@@ -51,6 +51,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$ktxViewModelVersion"
     implementation "androidx.fragment:fragment-ktx:$ktxFragmentVersion"
 
+    implementation 'com.okta.android:oidc-androidx:1.0.16'
+
     // Tests
     testImplementation project(':owncloudTestUtil')
     testImplementation "junit:junit:$junitVersion"
