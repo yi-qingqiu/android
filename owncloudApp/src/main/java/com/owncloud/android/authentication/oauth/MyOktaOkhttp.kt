@@ -16,6 +16,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.jvm.Throws
 
 /**
  * A OktaHttpClient implementation using OkHttpClient.

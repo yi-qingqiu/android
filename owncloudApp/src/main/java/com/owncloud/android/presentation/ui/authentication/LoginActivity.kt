@@ -38,20 +38,16 @@ import android.view.View.GONE
 import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
 import android.view.WindowManager.LayoutParams.FLAG_SECURE
-import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Observer
-import com.okta.oidc.AuthenticationPayload
 import com.okta.oidc.AuthorizationStatus
 import com.okta.oidc.OIDCConfig
 import com.okta.oidc.Okta
 import com.okta.oidc.ResultCallback
 import com.okta.oidc.Tokens
-import com.okta.oidc.clients.sessions.SessionClient
 import com.okta.oidc.clients.web.WebAuthClient
-import com.okta.oidc.net.OktaHttpClient
 import com.okta.oidc.storage.SharedPreferenceStorage
 import com.okta.oidc.util.AuthorizationException
 import com.owncloud.android.MainApp
@@ -67,10 +63,8 @@ import com.owncloud.android.domain.server.model.AuthenticationMethod
 import com.owncloud.android.domain.server.model.ServerInfo
 import com.owncloud.android.extensions.parseError
 import com.owncloud.android.extensions.showErrorInToast
-import com.owncloud.android.lib.common.SingleSessionManager
 import com.owncloud.android.lib.common.accounts.AccountTypeUtils
 import com.owncloud.android.lib.common.accounts.AccountUtils
-import com.owncloud.android.lib.common.http.HttpClient
 import com.owncloud.android.lib.common.network.CertificateCombinedException
 import com.owncloud.android.presentation.UIResult
 import com.owncloud.android.presentation.viewmodels.authentication.OCAuthenticationViewModel
@@ -79,8 +73,6 @@ import com.owncloud.android.ui.dialog.SslUntrustedCertDialog
 import com.owncloud.android.utils.DocumentProviderUtils.Companion.notifyDocumentProviderRoots
 import com.owncloud.android.utils.PreferenceUtils
 import kotlinx.android.synthetic.main.account_setup.*
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import timber.log.Timber
@@ -409,6 +401,26 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
         val redirectUri = getString(R.string.oauth2_redirect_uri)
         val scope = if (oidcSupported) OAUTH2_OIDC_SCOPE else ""
 
+        //Example of config
+        //Example of config
+        val mOidcConfig = OIDCConfig.Builder()
+            .clientId("e4rAsNUSIUs0lF4nbv9FmCeUkTlV9GdgTLDH1b5uie7syb90SzEVrbN7HIpmWJeD")
+            .redirectUri("oc://android.owncloud.com")
+            .endSessionRedirectUri("oc://android.owncloud.com")
+            .scopes("openid", "offline_access", "email", "profile")
+            .discoveryUri("https://ocis.owncloud.works/.well-known/openid-configuration")
+            .create()
+
+        val mOAuth2Config = OIDCConfig.Builder()
+            .clientId(clientId)
+            .redirectUri(redirectUri)
+            .endSessionRedirectUri(redirectUri)
+            .scopes("email")
+            .discoveryUri(OAuthUtils.getDiscoveryUri(context = this, serverBaseUrl = serverBaseUrl))
+            .create()
+
+
+/*
         val config = OIDCConfig.Builder()
             .clientId(clientId)
             .redirectUri(redirectUri)
@@ -416,9 +428,10 @@ class LoginActivity : AppCompatActivity(), SslUntrustedCertDialog.OnSslUntrusted
             .discoveryUri(OAuthUtils.getDiscoveryUri(context = this, serverBaseUrl = serverBaseUrl))
             .scopes("openid", "offline_access", "email", "profile")
             .create()
+*/
 
         val webClient: WebAuthClient = Okta.WebAuthBuilder()
-            .withConfig(config)
+            .withConfig(mOAuth2Config)
             .withContext(applicationContext)
             .withOktaHttpClient(MyOktaOkhttp())
             .browserMatchAll(true)
