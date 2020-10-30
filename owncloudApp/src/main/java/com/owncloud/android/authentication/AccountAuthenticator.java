@@ -40,15 +40,8 @@ import com.owncloud.android.authentication.oauth.AuthStateManager;
 import com.owncloud.android.authentication.oauth.OAuthUtils;
 import com.owncloud.android.lib.common.accounts.AccountTypeUtils;
 import com.owncloud.android.lib.common.accounts.AccountUtils;
-import com.owncloud.android.authentication.oauth.OAuthConnectionBuilder;
 import com.owncloud.android.presentation.ui.authentication.AuthenticatorConstants;
 import com.owncloud.android.presentation.ui.authentication.LoginActivity;
-import net.openid.appauth.AppAuthConfiguration;
-import net.openid.appauth.AuthorizationService;
-import net.openid.appauth.AuthorizationServiceConfiguration;
-import net.openid.appauth.ClientAuthentication;
-import net.openid.appauth.GrantTypeValues;
-import net.openid.appauth.TokenRequest;
 import timber.log.Timber;
 
 import java.io.File;
@@ -320,85 +313,85 @@ public class AccountAuthenticator extends AbstractAccountAuthenticator {
 
         Timber.d("Get OAuth2 refresh token from account: %s, to exchange it for new access and refresh tokens",
                 refreshToken);
-
-        AuthStateManager authStateManager = AuthStateManager.getInstance(mContext);
-        AuthorizationServiceConfiguration authorizationServiceConfiguration = authStateManager.readState(account.name).
-                getAuthorizationServiceConfiguration();
-
-        if (authorizationServiceConfiguration == null) {
-            Timber.d("No authorization configuration found, falling back to hardcoded oauth2 endpoints");
-            // The code below is for users (already logged in) updating the app from previous versions, which do not have
-            // an authState that is configured when doing a fresh log in
-            String baseUrl = accountManager.getUserData(
-                    account,
-                    AccountUtils.Constants.KEY_OC_BASE_URL
-            );
-            authorizationServiceConfiguration = new AuthorizationServiceConfiguration(
-                    Uri.parse(baseUrl + File.separator + mContext.getString(R.string.oauth2_url_endpoint_auth)), // auth endpoint
-                    Uri.parse(baseUrl + File.separator + mContext.getString(R.string.oauth2_url_endpoint_access)) // token endpoint
-            );
-        }
-
-
-        String scope = accountManager.getUserData(
-                account,
-                KEY_OAUTH2_SCOPE
-        );
-
-        TokenRequest tokenRequest = new TokenRequest.Builder(
-                authorizationServiceConfiguration,
-                mContext.getString(R.string.oauth2_client_id)
-        ).setGrantType(GrantTypeValues.REFRESH_TOKEN)
-                .setScope(scope)
-                .setRefreshToken(refreshToken)
-                .build();
-
-        ClientAuthentication clientAuth =
-                OAuthUtils.Companion.createClientSecretBasic(mContext.getString(R.string.oauth2_client_secret));
-
-        AppAuthConfiguration.Builder appAuthConfigurationBuilder = new AppAuthConfiguration.Builder();
-        appAuthConfigurationBuilder.setConnectionBuilder(new OAuthConnectionBuilder(mContext));
-        AuthorizationService authService = new AuthorizationService(mContext, appAuthConfigurationBuilder.build());
-
-        // Let's perform the token request
-        authService.performTokenRequest(
-                tokenRequest,
-                clientAuth,
-                (tokenResponse, authorizationException) -> {
-                    if (tokenResponse != null && tokenResponse.accessToken != null) {
-                        String newAccessToken = tokenResponse.accessToken;
-                        Timber.d("Set OAuth2 new access token in account: %s", newAccessToken);
-                        accountManager.setAuthToken(account, authTokenType, newAccessToken);
-
-                        final Bundle result = new Bundle();
-                        result.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
-                        result.putString(AccountManager.KEY_ACCOUNT_TYPE, MainApp.Companion.getAccountType());
-                        result.putString(AccountManager.KEY_AUTHTOKEN, newAccessToken);
-                        accountAuthenticatorResponse.onResult(result);
-
-                        String refreshTokenToUseFromNowOn;
-
-                        if (tokenResponse.refreshToken != null) {
-                            refreshTokenToUseFromNowOn = tokenResponse.refreshToken;
-                        } else {
-                            refreshTokenToUseFromNowOn = refreshToken;
-                        }
-
-                        Timber.d("Set OAuth2 new refresh token in account: %s", refreshTokenToUseFromNowOn);
-                        accountManager.setUserData(
-                                account,
-                                KEY_OAUTH2_REFRESH_TOKEN,
-                                refreshTokenToUseFromNowOn
-                        );
-
-                    } else if (authorizationException != null) {
-                        Timber.e(authorizationException, "OAuth request to refresh access token failed");
-                        Bundle result = prepareBundleToAccessLoginActivity(accountAuthenticatorResponse, account,
-                                authTokenType, options);
-                        accountAuthenticatorResponse.onResult(result);
-                    }
-                    authService.dispose(); // Authorization service no longer required, cleaning up...
-                });
+//
+//        AuthStateManager authStateManager = AuthStateManager.getInstance(mContext);
+//        AuthorizationServiceConfiguration authorizationServiceConfiguration = authStateManager.readState(account.name).
+//                getAuthorizationServiceConfiguration();
+//
+//        if (authorizationServiceConfiguration == null) {
+//            Timber.d("No authorization configuration found, falling back to hardcoded oauth2 endpoints");
+//            // The code below is for users (already logged in) updating the app from previous versions, which do not have
+//            // an authState that is configured when doing a fresh log in
+//            String baseUrl = accountManager.getUserData(
+//                    account,
+//                    AccountUtils.Constants.KEY_OC_BASE_URL
+//            );
+//            authorizationServiceConfiguration = new AuthorizationServiceConfiguration(
+//                    Uri.parse(baseUrl + File.separator + mContext.getString(R.string.oauth2_url_endpoint_auth)), // auth endpoint
+//                    Uri.parse(baseUrl + File.separator + mContext.getString(R.string.oauth2_url_endpoint_access)) // token endpoint
+//            );
+//        }
+//
+//
+//        String scope = accountManager.getUserData(
+//                account,
+//                KEY_OAUTH2_SCOPE
+//        );
+//
+//        TokenRequest tokenRequest = new TokenRequest.Builder(
+//                authorizationServiceConfiguration,
+//                mContext.getString(R.string.oauth2_client_id)
+//        ).setGrantType(GrantTypeValues.REFRESH_TOKEN)
+//                .setScope(scope)
+//                .setRefreshToken(refreshToken)
+//                .build();
+//
+//        ClientAuthentication clientAuth =
+//                OAuthUtils.Companion.createClientSecretBasic(mContext.getString(R.string.oauth2_client_secret));
+//
+//        AppAuthConfiguration.Builder appAuthConfigurationBuilder = new AppAuthConfiguration.Builder();
+//        appAuthConfigurationBuilder.setConnectionBuilder(new OAuthConnectionBuilder(mContext));
+//        AuthorizationService authService = new AuthorizationService(mContext, appAuthConfigurationBuilder.build());
+//
+//        // Let's perform the token request
+//        authService.performTokenRequest(
+//                tokenRequest,
+//                clientAuth,
+//                (tokenResponse, authorizationException) -> {
+//                    if (tokenResponse != null && tokenResponse.accessToken != null) {
+//                        String newAccessToken = tokenResponse.accessToken;
+//                        Timber.d("Set OAuth2 new access token in account: %s", newAccessToken);
+//                        accountManager.setAuthToken(account, authTokenType, newAccessToken);
+//
+//                        final Bundle result = new Bundle();
+//                        result.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
+//                        result.putString(AccountManager.KEY_ACCOUNT_TYPE, MainApp.Companion.getAccountType());
+//                        result.putString(AccountManager.KEY_AUTHTOKEN, newAccessToken);
+//                        accountAuthenticatorResponse.onResult(result);
+//
+//                        String refreshTokenToUseFromNowOn;
+//
+//                        if (tokenResponse.refreshToken != null) {
+//                            refreshTokenToUseFromNowOn = tokenResponse.refreshToken;
+//                        } else {
+//                            refreshTokenToUseFromNowOn = refreshToken;
+//                        }
+//
+//                        Timber.d("Set OAuth2 new refresh token in account: %s", refreshTokenToUseFromNowOn);
+//                        accountManager.setUserData(
+//                                account,
+//                                KEY_OAUTH2_REFRESH_TOKEN,
+//                                refreshTokenToUseFromNowOn
+//                        );
+//
+//                    } else if (authorizationException != null) {
+//                        Timber.e(authorizationException, "OAuth request to refresh access token failed");
+//                        Bundle result = prepareBundleToAccessLoginActivity(accountAuthenticatorResponse, account,
+//                                authTokenType, options);
+//                        accountAuthenticatorResponse.onResult(result);
+//                    }
+//                    authService.dispose(); // Authorization service no longer required, cleaning up...
+//                });
     }
 
     /**

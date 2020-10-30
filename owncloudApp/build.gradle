@@ -52,6 +52,7 @@ dependencies {
     implementation "androidx.fragment:fragment-ktx:$ktxFragmentVersion"
 
     implementation 'com.okta.android:oidc-androidx:1.0.16'
+    compile 'com.android.support:customtabs:23.3.0'
 
     // Tests
     testImplementation project(':owncloudTestUtil')

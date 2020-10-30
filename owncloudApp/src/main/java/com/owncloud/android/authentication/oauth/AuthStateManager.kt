@@ -17,7 +17,6 @@ package com.owncloud.android.authentication.oauth
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.AnyThread
-import net.openid.appauth.AuthState
 import org.json.JSONException
 import timber.log.Timber
 import java.lang.ref.WeakReference
@@ -30,65 +29,65 @@ import java.util.concurrent.locks.ReentrantLock
  * mutation.
  */
 class AuthStateManager private constructor(context: Context) {
-
-    companion object {
-        private val INSTANCE_REF = AtomicReference(WeakReference<AuthStateManager?>(null))
-        private const val STORE_NAME = "AuthState"
-        @JvmStatic
-        @AnyThread
-        fun getInstance(context: Context): AuthStateManager {
-            var manager = INSTANCE_REF.get().get()
-            if (manager == null) {
-                manager = AuthStateManager(context.applicationContext)
-                INSTANCE_REF.set(WeakReference(manager))
-            }
-            return manager
-        }
-    }
-
-    private val prefs: SharedPreferences
-    private val prefsLock: ReentrantLock
-
-    init {
-        prefs = context.getSharedPreferences(STORE_NAME, Context.MODE_PRIVATE)
-        prefsLock = ReentrantLock()
-    }
-
-    @AnyThread
-    fun replace(accountName: String, state: AuthState): AuthState {
-        writeState(accountName, state)
-        return state
-    }
-
-    @AnyThread
-    fun readState(accountName: String): AuthState {
-        prefsLock.lock()
-        return try {
-            val currentState = prefs.getString(accountName, null) ?: return AuthState()
-            try {
-                AuthState.jsonDeserialize(currentState)
-            } catch (exception: JSONException) {
-                Timber.w("Failed to deserialize stored auth state - discarding")
-                AuthState()
-            }
-        } finally {
-            prefsLock.unlock()
-        }
-    }
-
-    @AnyThread
-    private fun writeState(accountName: String, authState: AuthState?) {
-        prefsLock.lock()
-        try {
-            val editor = prefs.edit()
-            if (authState == null) {
-                editor.remove(accountName)
-            } else {
-                editor.putString(accountName, authState.jsonSerializeString())
-            }
-            check(editor.commit()) { "Failed to write state to shared prefs" }
-        } finally {
-            prefsLock.unlock()
-        }
-    }
+//
+//    companion object {
+//        private val INSTANCE_REF = AtomicReference(WeakReference<AuthStateManager?>(null))
+//        private const val STORE_NAME = "AuthState"
+//        @JvmStatic
+//        @AnyThread
+//        fun getInstance(context: Context): AuthStateManager {
+//            var manager = INSTANCE_REF.get().get()
+//            if (manager == null) {
+//                manager = AuthStateManager(context.applicationContext)
+//                INSTANCE_REF.set(WeakReference(manager))
+//            }
+//            return manager
+//        }
+//    }
+//
+//    private val prefs: SharedPreferences
+//    private val prefsLock: ReentrantLock
+//
+//    init {
+//        prefs = context.getSharedPreferences(STORE_NAME, Context.MODE_PRIVATE)
+//        prefsLock = ReentrantLock()
+//    }
+//
+//    @AnyThread
+//    fun replace(accountName: String, state: AuthState): AuthState {
+//        writeState(accountName, state)
+//        return state
+//    }
+//
+//    @AnyThread
+//    fun readState(accountName: String): AuthState {
+//        prefsLock.lock()
+//        return try {
+//            val currentState = prefs.getString(accountName, null) ?: return AuthState()
+//            try {
+//                AuthState.jsonDeserialize(currentState)
+//            } catch (exception: JSONException) {
+//                Timber.w("Failed to deserialize stored auth state - discarding")
+//                AuthState()
+//            }
+//        } finally {
+//            prefsLock.unlock()
+//        }
+//    }
+//
+//    @AnyThread
+//    private fun writeState(accountName: String, authState: AuthState?) {
+//        prefsLock.lock()
+//        try {
+//            val editor = prefs.edit()
+//            if (authState == null) {
+//                editor.remove(accountName)
+//            } else {
+//                editor.putString(accountName, authState.jsonSerializeString())
+//            }
+//            check(editor.commit()) { "Failed to write state to shared prefs" }
+//        } finally {
+//            prefsLock.unlock()
+//        }
+//    }
 }
